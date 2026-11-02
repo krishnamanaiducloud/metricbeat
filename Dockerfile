@@ -7,9 +7,10 @@ ARG BEATS_VERSION=9.5.6
 ARG BEATS_COMMIT=9c3843112456aa7984fc91d941139d4f78a34f1e
 USER root
 WORKDIR /src
-RUN git -c advice.detachedHead=false clone --quiet --depth 1 --branch "v${BEATS_VERSION}" \
-      https://github.com/elastic/beats.git . \
-    && test "$(git rev-parse HEAD)" = "${BEATS_COMMIT}"
+ADD --checksum=sha256:49fe6d28a284febc128616eca3b57b14dd697cce38475ca08ecc0c71dadeb7ef \
+    https://codeload.github.com/elastic/beats/tar.gz/9c3843112456aa7984fc91d941139d4f78a34f1e /tmp/beats.tar.gz
+RUN tar -xzf /tmp/beats.tar.gz --strip-components=1 \
+    && rm -f /tmp/beats.tar.gz
 
 FROM source AS build
 ARG TARGETOS
