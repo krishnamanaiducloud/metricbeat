@@ -1,0 +1,44 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: metricbeat
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: metricbeat
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: metricbeat
+    spec:
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        fsGroup: 0
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: metricbeat
+          image: docker.io/mohankrishna999/metricbeat:9.5.6-patched
+          args: [-e, --strict.perms=false, -c, /etc/metricbeat/metricbeat.yml]
+          env:
+            - name: ELASTICSEARCH_HOSTS
+              value: http://elasticsearch:9200
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: [ALL]
+          volumeMounts:
+            - name: config
+              mountPath: /etc/metricbeat
+              readOnly: true
+            - name: data
+              mountPath: /usr/share/metricbeat/data
+      volumes:
+        - name: config
+          configMap:
+            name: metricbeat-config
+        - name: data
+          emptyDir: {}
