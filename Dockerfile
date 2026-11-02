@@ -2,23 +2,25 @@
 ARG GO_IMAGE=cgr.dev/chainguard/go:latest-dev@sha256:c33b2ae1b183ff001b7f2c29936c587ce1cd4ffaf9efb031bd81240f16a96504
 ARG RUNTIME_IMAGE=cgr.dev/chainguard/static:latest@sha256:fc42af33e643f20d08baf03cddcc1c02ba57052dfb02edb0d79f3fc47bcea8d9
 
-FROM --platform=$BUILDPLATFORM ${GO_IMAGE} AS build
-ARG TARGETOS
-ARG TARGETARCH
+FROM --platform=$BUILDPLATFORM ${GO_IMAGE} AS source
 ARG BEATS_VERSION=9.5.6
 ARG BEATS_COMMIT=9c3843112456aa7984fc91d941139d4f78a34f1e
 USER root
-ENV CGO_ENABLED=0 GOTOOLCHAIN=local GOEXPERIMENT=nodwarf5
 WORKDIR /src
 RUN git -c advice.detachedHead=false clone --quiet --depth 1 --branch "v${BEATS_VERSION}" \
       https://github.com/elastic/beats.git . \
     && test "$(git rev-parse HEAD)" = "${BEATS_COMMIT}"
+
+FROM source AS build
+ARG TARGETOS
+ARG TARGETARCH
+ARG BEATS_COMMIT=9c3843112456aa7984fc91d941139d4f78a34f1e
+ENV CGO_ENABLED=0 GOTOOLCHAIN=local GOEXPERIMENT=nodwarf5
 RUN --mount=type=cache,id=metricbeat-go-mod,target=/root/go/pkg/mod,sharing=locked \
     --mount=type=cache,id=metricbeat-go-build,target=/root/.cache/go-build,sharing=locked \
     GOOS="${TARGETOS}" GOARCH="${TARGETARCH}" go build -trimpath -buildvcs=false \
       -ldflags "-s -w -buildid= -X github.com/elastic/beats/v7/libbeat/version.buildTime=unknown -X github.com/elastic/beats/v7/libbeat/version.commit=${BEATS_COMMIT}" \
-      -o /out/metricbeat ./metricbeat \
-    && /out/metricbeat version
+      -o /out/metricbeat ./metricbeat
 
 FROM ${RUNTIME_IMAGE}
 ARG BEATS_VERSION=9.5.6
