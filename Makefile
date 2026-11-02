@@ -2,7 +2,7 @@
 IMAGENAME=mohankrishna999/metricbeat
 VERSION=9.5.6-patched
 PLATFORMS=linux/amd64,linux/arm64
-BUILDER=patched-multiarch
+BUILDER=securebridge
 build:
 	docker buildx build --load --platform linux/amd64 -t ${IMAGENAME}:${VERSION} .
 smoke: build
