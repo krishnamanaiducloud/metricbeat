@@ -12,7 +12,12 @@ ADD --checksum=sha256:49fe6d28a284febc128616eca3b57b14dd697cce38475ca08ecc0c71da
 RUN tar -xzf /tmp/beats.tar.gz --strip-components=1 \
     && rm -f /tmp/beats.tar.gz
 
-FROM source AS build
+FROM source AS patched
+COPY build/patch-modules.sh /usr/local/bin/patch-modules.sh
+RUN --mount=type=cache,id=metricbeat-go-mod,target=/root/go/pkg/mod,sharing=locked \
+    sh /usr/local/bin/patch-modules.sh
+
+FROM patched AS build
 ARG TARGETOS
 ARG TARGETARCH
 ARG BEATS_COMMIT=9c3843112456aa7984fc91d941139d4f78a34f1e
@@ -21,7 +26,10 @@ RUN --mount=type=cache,id=metricbeat-go-mod,target=/root/go/pkg/mod,sharing=lock
     --mount=type=cache,id=metricbeat-go-build,target=/root/.cache/go-build,sharing=locked \
     GOOS="${TARGETOS}" GOARCH="${TARGETARCH}" go build -trimpath -buildvcs=false \
       -ldflags "-s -w -buildid= -X github.com/elastic/beats/v7/libbeat/version.buildTime=unknown -X github.com/elastic/beats/v7/libbeat/version.commit=${BEATS_COMMIT}" \
-      -o /out/metricbeat ./metricbeat
+      -o /out/metricbeat ./metricbeat \
+    && mkdir -p /out/data /out/logs \
+    && chown -R 1000:0 /out/data /out/logs \
+    && chmod 0770 /out/data /out/logs
 
 FROM ${RUNTIME_IMAGE}
 ARG BEATS_VERSION=9.5.6
@@ -35,6 +43,8 @@ COPY --from=build --chown=1000:0 --chmod=0555 /out/metricbeat /usr/share/metricb
 COPY --from=build --chown=1000:0 --chmod=0440 /src/metricbeat/metricbeat.yml /usr/share/metricbeat/metricbeat.yml
 COPY --from=build --chown=1000:0 /src/metricbeat/modules.d /usr/share/metricbeat/modules.d
 COPY --from=build --chown=1000:0 /src/metricbeat/module /usr/share/metricbeat/module
+COPY --from=build --chown=1000:0 --chmod=0770 /out/data /usr/share/metricbeat/data
+COPY --from=build --chown=1000:0 --chmod=0770 /out/logs /usr/share/metricbeat/logs
 USER 1000:0
 ENTRYPOINT ["/usr/share/metricbeat/metricbeat"]
 CMD ["-e", "--strict.perms=false"]

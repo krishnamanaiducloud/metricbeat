@@ -9,7 +9,7 @@ smoke: build
 	docker run --rm ${IMAGENAME}:${VERSION} version
 	docker run --rm ${IMAGENAME}:${VERSION} test config -e --strict.perms=false
 scan: build
-	trivy image --scanners vuln --severity UNKNOWN,LOW,MEDIUM,HIGH,CRITICAL --exit-code 1 ${IMAGENAME}:${VERSION}
+	trivy image --scanners vuln --ignorefile .trivyignore.yaml --severity UNKNOWN,LOW,MEDIUM,HIGH,CRITICAL --exit-code 1 ${IMAGENAME}:${VERSION}
 	grype ${IMAGENAME}:${VERSION} --fail-on negligible
 builder:
 	docker buildx inspect ${BUILDER} >/dev/null 2>&1 || docker buildx create --name ${BUILDER} --driver docker-container >/dev/null

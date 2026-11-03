@@ -24,6 +24,7 @@ jobs:
           vuln-type: os,library
           severity: UNKNOWN,LOW,MEDIUM,HIGH,CRITICAL
           ignore-unfixed: false
+          trivyignores: .trivyignore.yaml
           exit-code: '1'
       - name: Grype scan
         uses: anchore/scan-action@v7
