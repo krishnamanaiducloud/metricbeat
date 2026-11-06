@@ -1,8 +1,8 @@
 # Metricbeat hardened source build
 
-Metricbeat 9.5.6 rebuilt from the verified `elastic/beats` release commit with a current
+Metricbeat 8.19.19 rebuilt from the verified `elastic/beats` release commit with a current
 Chainguard Go toolchain and a shell-less static runtime. Published as
-`mohankrishna999/metricbeat:9.5.6-patched` for amd64 and arm64.
+`mohankrishna999/metricbeat:8.19.19-patched` for amd64 and arm64.
 
 The image preserves the standard `/usr/share/metricbeat` layout and runs as UID 1000,
 primary GID 0. Kubernetes and OpenShift manifests use read-only host mounts for `/proc`

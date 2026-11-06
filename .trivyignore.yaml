@@ -1,4 +1,0 @@
-vulnerabilities:
-  - id: GO-2026-5932
-    statement: The affected golang.org/x/crypto/openpgp package is not present in the Metricbeat dependency graph; build/patch-modules.sh enforces this before compilation.
-    expired_at: 2027-02-01
