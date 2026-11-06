@@ -5,4 +5,4 @@ resources:
   - deployment.yaml
 images:
   - name: docker.io/mohankrishna999/metricbeat
-    newTag: 9.5.6-patched
+    newTag: 8.19.24-patched

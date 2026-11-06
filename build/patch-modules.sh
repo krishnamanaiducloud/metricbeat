@@ -1,12 +1,12 @@
 #!/bin/sh
 set -eu
 
-go get golang.org/x/net@v0.62.0 golang.org/x/crypto@v0.58.0
+# golang.org/x/crypto is pinned to the upstream fix commit for GO-2026-5932 (no tagged release yet).
+pins="golang.org/x/net@v0.62.0 golang.org/x/crypto@v0.58.1-0.20261009181718-2f1f834330b2"
 
-test "$(go list -m -f '{{.Version}}' golang.org/x/net)" = "v0.62.0"
-test "$(go list -m -f '{{.Version}}' golang.org/x/crypto)" = "v0.58.0"
+# shellcheck disable=SC2086
+go get $pins
 
-if go list -deps ./metricbeat | grep -qx 'golang.org/x/crypto/openpgp'; then
-  echo 'refusing to suppress GO-2026-5932: openpgp is linked into Metricbeat' >&2
-  exit 1
-fi
+for pin in $pins; do
+  test "$(go list -m -f '{{.Version}}' "${pin%@*}")" = "${pin#*@}"
+done

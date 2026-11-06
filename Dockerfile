@@ -1,14 +1,14 @@
 # syntax=docker/dockerfile:1.7
-ARG GO_IMAGE=cgr.dev/chainguard/go:latest-dev@sha256:c33b2ae1b183ff001b7f2c29936c587ce1cd4ffaf9efb031bd81240f16a96504
+ARG GO_IMAGE=cgr.dev/chainguard/go:latest-dev@sha256:7ec5088173068ac9c376210b7f5fd0de5bcb57c60b508ee867d5e7edf872922b
 ARG RUNTIME_IMAGE=cgr.dev/chainguard/static:latest@sha256:fc42af33e643f20d08baf03cddcc1c02ba57052dfb02edb0d79f3fc47bcea8d9
 
 FROM --platform=$BUILDPLATFORM ${GO_IMAGE} AS source
-ARG BEATS_VERSION=9.5.6
-ARG BEATS_COMMIT=9c3843112456aa7984fc91d941139d4f78a34f1e
+ARG BEATS_VERSION=8.19.24
+ARG BEATS_COMMIT=8511bd8ba1e66bc536451a3badf85d02f7588fb4
 USER root
 WORKDIR /src
-ADD --checksum=sha256:49fe6d28a284febc128616eca3b57b14dd697cce38475ca08ecc0c71dadeb7ef \
-    https://codeload.github.com/elastic/beats/tar.gz/9c3843112456aa7984fc91d941139d4f78a34f1e /tmp/beats.tar.gz
+ADD --checksum=sha256:3140b154ede2afc8bcc3a7c3e6913834a1c565ad71f2d931e50ca91579f2b7b4 \
+    https://codeload.github.com/elastic/beats/tar.gz/8511bd8ba1e66bc536451a3badf85d02f7588fb4 /tmp/beats.tar.gz
 RUN tar -xzf /tmp/beats.tar.gz --strip-components=1 \
     && rm -f /tmp/beats.tar.gz
 
@@ -20,7 +20,7 @@ RUN --mount=type=cache,id=metricbeat-go-mod,target=/root/go/pkg/mod,sharing=lock
 FROM patched AS build
 ARG TARGETOS
 ARG TARGETARCH
-ARG BEATS_COMMIT=9c3843112456aa7984fc91d941139d4f78a34f1e
+ARG BEATS_COMMIT=8511bd8ba1e66bc536451a3badf85d02f7588fb4
 ENV CGO_ENABLED=0 GOTOOLCHAIN=local GOEXPERIMENT=nodwarf5
 RUN --mount=type=cache,id=metricbeat-go-mod,target=/root/go/pkg/mod,sharing=locked \
     --mount=type=cache,id=metricbeat-go-build,target=/root/.cache/go-build,sharing=locked \
@@ -32,7 +32,7 @@ RUN --mount=type=cache,id=metricbeat-go-mod,target=/root/go/pkg/mod,sharing=lock
     && chmod 0770 /out/data /out/logs
 
 FROM ${RUNTIME_IMAGE}
-ARG BEATS_VERSION=9.5.6
+ARG BEATS_VERSION=8.19.24
 LABEL org.opencontainers.image.title="Metricbeat" \
       org.opencontainers.image.version="${BEATS_VERSION}-patched" \
       org.opencontainers.image.source="https://github.com/elastic/beats" \
