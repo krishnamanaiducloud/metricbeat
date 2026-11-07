@@ -1,5 +1,5 @@
 # syntax=docker/dockerfile:1.7
-ARG GO_IMAGE=cgr.dev/chainguard/go:latest-dev@sha256:c33b2ae1b183ff001b7f2c29936c587ce1cd4ffaf9efb031bd81240f16a96504
+ARG GO_IMAGE=cgr.dev/chainguard/go:latest-dev@sha256:ed70318f7b4f2e4a82e1dbc363f7a13be3a5805081f86ed9d1ec02d2694c222f
 ARG RUNTIME_IMAGE=cgr.dev/chainguard/static:latest@sha256:fc42af33e643f20d08baf03cddcc1c02ba57052dfb02edb0d79f3fc47bcea8d9
 
 FROM --platform=$BUILDPLATFORM ${GO_IMAGE} AS source
@@ -33,8 +33,9 @@ RUN --mount=type=cache,id=metricbeat-go-mod,target=/root/go/pkg/mod,sharing=lock
 
 FROM ${RUNTIME_IMAGE}
 ARG BEATS_VERSION=9.5.6
+ARG IMAGE_VERSION=9.5.6.1-patched
 LABEL org.opencontainers.image.title="Metricbeat" \
-      org.opencontainers.image.version="${BEATS_VERSION}-patched" \
+      org.opencontainers.image.version="${IMAGE_VERSION}" \
       org.opencontainers.image.source="https://github.com/elastic/beats" \
       org.opencontainers.image.licenses="Elastic-2.0"
 ENV ELASTIC_CONTAINER=true GODEBUG=madvdontneed=1

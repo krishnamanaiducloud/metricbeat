@@ -1,6 +1,6 @@
 .PHONY: build smoke scan builder push all
 IMAGENAME=mohankrishna999/metricbeat
-VERSION=9.5.6-patched
+VERSION=9.5.6.1-patched
 PLATFORMS=linux/amd64,linux/arm64
 BUILDER=securebridge
 build:
