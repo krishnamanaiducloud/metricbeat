@@ -2,13 +2,54 @@
 
 Metricbeat 9.5.6 rebuilt from the verified `elastic/beats` release commit with a current
 Chainguard Go toolchain and a shell-less static runtime. Published as
-`mohankrishna999/metricbeat:9.5.6.1-patched` for amd64 and arm64. 9.5.6 is the newest
+`mohankrishna999/metricbeat:9.5.6.2-patched` for amd64 and arm64. 9.5.6 is the newest
 Elastic 9 release.
 
-`9.5.6.1-patched` raises `golang.org/x/crypto` from 0.58.0 to
-`v0.58.1-0.20261009181718-2f1f834330b2`, the upstream fix for GO-2026-5932 (no tagged
-release yet), with `golang.org/x/net` 0.62.0 as before (`build/patch-modules.sh`). The
-build fails if either pin does not apply, or if `golang.org/x/crypto/openpgp` is linked in.
+## 9.5.6.2-patched
+
+- **Same distribution as the official image.** The binary is now built from
+  `x-pack/metricbeat`, the default distribution in `docker.elastic.co/beats/metricbeat`.
+  Earlier tags were built from the OSS `metricbeat` package and lacked 25 modules (among
+  them aws, azure, gcp, sql, mssql, oracle, statsd, tomcat, containerd, coredns and istio)
+  and the Kibana dashboards.
+- **Same data files.** The image now carries the official image's data files, unchanged
+  and pinned by digest: light modules, `modules.d`, the Kibana dashboards for `setup
+  --dashboards`, `fields.yml`, `metricbeat.reference.yml` and the default
+  `metricbeat.yml`. No binary comes from the official image.
+- **No test files in the image.** Earlier tags copied the source `module/` tree, which
+  includes test Dockerfiles, a test `pom.xml` and an EKS Terraform `requirements.txt`.
+  That requirements file is where scanners found `urllib3` and `pyasn1`.
+- **Updated modules.** `kernel.org/pub/linux/libs/security/libcap/cap` and `psx` are
+  raised from v1.2.57 to v1.2.78, alongside the existing `golang.org/x/net` 0.62.0 and
+  the `golang.org/x/crypto` GO-2026-5932 fix
+  (`v0.58.1-0.20261009181718-2f1f834330b2`). See `build/patch-modules.sh`; the build
+  fails if a pin does not apply or if `golang.org/x/crypto/openpgp` is linked in.
+- **Version output.** `metricbeat version` reports the release commit and its time, as
+  the official build does (earlier tags printed `unknown`).
+- **Same environment.** The image sets `PATH` and
+  `LIBBEAT_MONITORING_CGROUPS_HIERARCHY_OVERRIDE=/` as the official image does.
+
+### Oracle module
+
+The static build has no cgo, so the Oracle driver's cgo binding cannot be compiled.
+`build/godror-shim.go` stands in for it:
+- DSN parsing still uses the real `godror/dsn` package, so the `oracle` and `sql`
+  modules load and validate their configuration as before.
+- Connecting to Oracle returns `cannot connect to Oracle: this static Metricbeat build
+  has no Oracle client library`.
+
+The official image fails the same way (`DPI-1047: Cannot locate a 64-bit Oracle Client
+library`) unless Oracle Instant Client is added to it.
+
+### Verification
+
+Compared with `docker.elastic.co/beats/metricbeat:9.5.6`:
+- **Static checks:** the same version line, `test config`, the same 71-module list,
+  identical `export template` and `export ilm-policy` output, and the same 1,262
+  packaged data files.
+- **Module runs:** the same metricsets and results for system, activemq and tomcat
+  (light modules), sql (mysql driver) and mssql.
+- **Scans:** Trivy 0.76.2 and Grype 0.121.1 report no findings.
 
 The image preserves the standard `/usr/share/metricbeat` layout and runs as UID 1000,
 primary GID 0. Kubernetes and OpenShift manifests use read-only host mounts for `/proc`

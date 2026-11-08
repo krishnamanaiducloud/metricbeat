@@ -1,6 +1,11 @@
 # syntax=docker/dockerfile:1.7
 ARG GO_IMAGE=cgr.dev/chainguard/go:latest-dev@sha256:ed70318f7b4f2e4a82e1dbc363f7a13be3a5805081f86ed9d1ec02d2694c222f
 ARG RUNTIME_IMAGE=cgr.dev/chainguard/static:latest@sha256:fc42af33e643f20d08baf03cddcc1c02ba57052dfb02edb0d79f3fc47bcea8d9
+# The official image of the same release supplies the packaged data files only: light modules,
+# modules.d, Kibana dashboards, fields.yml and the configuration files. No binary is taken from it.
+ARG OFFICIAL_IMAGE=docker.elastic.co/beats/metricbeat:9.5.6@sha256:59cea2d9d3b4c5724039085002570095af4ea4cba4fa6b1099796fa391c0e777
+
+FROM --platform=$BUILDPLATFORM ${OFFICIAL_IMAGE} AS official
 
 FROM --platform=$BUILDPLATFORM ${GO_IMAGE} AS source
 ARG BEATS_VERSION=9.5.6
@@ -14,6 +19,7 @@ RUN tar -xzf /tmp/beats.tar.gz --strip-components=1 \
 
 FROM source AS patched
 COPY build/patch-modules.sh /usr/local/bin/patch-modules.sh
+COPY build/godror-shim.go /usr/local/share/godror-shim.go
 RUN --mount=type=cache,id=metricbeat-go-mod,target=/root/go/pkg/mod,sharing=locked \
     sh /usr/local/bin/patch-modules.sh
 
@@ -21,29 +27,36 @@ FROM patched AS build
 ARG TARGETOS
 ARG TARGETARCH
 ARG BEATS_COMMIT=9c3843112456aa7984fc91d941139d4f78a34f1e
+ARG BEATS_COMMIT_TIME=2026-10-28T15:52:22Z
 ENV CGO_ENABLED=0 GOTOOLCHAIN=local GOEXPERIMENT=nodwarf5
+COPY build/buildstamp.go /src/libbeat/version/buildstamp.go
+# x-pack/metricbeat is the default distribution that the official image ships. `metricbeat version`
+# reports the release commit and its time, as the official build does.
 RUN --mount=type=cache,id=metricbeat-go-mod,target=/root/go/pkg/mod,sharing=locked \
     --mount=type=cache,id=metricbeat-go-build,target=/root/.cache/go-build,sharing=locked \
     GOOS="${TARGETOS}" GOARCH="${TARGETARCH}" go build -trimpath -buildvcs=false \
-      -ldflags "-s -w -buildid= -X github.com/elastic/beats/v7/libbeat/version.buildTime=unknown -X github.com/elastic/beats/v7/libbeat/version.commit=${BEATS_COMMIT}" \
-      -o /out/metricbeat ./metricbeat \
+      -ldflags "-s -w -buildid= -X github.com/elastic/beats/v7/libbeat/version.vcsRevision=${BEATS_COMMIT} -X github.com/elastic/beats/v7/libbeat/version.buildVCSTime=${BEATS_COMMIT_TIME}" \
+      -o /out/metricbeat ./x-pack/metricbeat \
     && mkdir -p /out/data /out/logs \
     && chown -R 1000:0 /out/data /out/logs \
     && chmod 0770 /out/data /out/logs
 
 FROM ${RUNTIME_IMAGE}
 ARG BEATS_VERSION=9.5.6
-ARG IMAGE_VERSION=9.5.6.1-patched
+ARG IMAGE_VERSION=9.5.6.2-patched
 LABEL org.opencontainers.image.title="Metricbeat" \
       org.opencontainers.image.version="${IMAGE_VERSION}" \
       org.opencontainers.image.source="https://github.com/elastic/beats" \
       org.opencontainers.image.licenses="Elastic-2.0"
-ENV ELASTIC_CONTAINER=true GODEBUG=madvdontneed=1
+ENV PATH=/usr/share/metricbeat:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin \
+    ELASTIC_CONTAINER=true GODEBUG=madvdontneed=1 LIBBEAT_MONITORING_CGROUPS_HIERARCHY_OVERRIDE=/
 WORKDIR /usr/share/metricbeat
+COPY --from=official --chown=1000:0 /usr/share/metricbeat/LICENSE.txt /usr/share/metricbeat/NOTICE.txt /usr/share/metricbeat/README.md /usr/share/metricbeat/.build_hash.txt /usr/share/metricbeat/fields.yml /usr/share/metricbeat/metricbeat.reference.yml /usr/share/metricbeat/
+COPY --from=official --chown=1000:0 /usr/share/metricbeat/kibana /usr/share/metricbeat/kibana
+COPY --from=official --chown=1000:0 /usr/share/metricbeat/module /usr/share/metricbeat/module
+COPY --from=official --chown=1000:0 /usr/share/metricbeat/modules.d /usr/share/metricbeat/modules.d
+COPY --from=official --chown=1000:0 --chmod=0440 /usr/share/metricbeat/metricbeat.yml /usr/share/metricbeat/metricbeat.yml
 COPY --from=build --chown=1000:0 --chmod=0555 /out/metricbeat /usr/share/metricbeat/metricbeat
-COPY --from=build --chown=1000:0 --chmod=0440 /src/metricbeat/metricbeat.yml /usr/share/metricbeat/metricbeat.yml
-COPY --from=build --chown=1000:0 /src/metricbeat/modules.d /usr/share/metricbeat/modules.d
-COPY --from=build --chown=1000:0 /src/metricbeat/module /usr/share/metricbeat/module
 COPY --from=build --chown=1000:0 --chmod=0770 /out/data /usr/share/metricbeat/data
 COPY --from=build --chown=1000:0 --chmod=0770 /out/logs /usr/share/metricbeat/logs
 USER 1000:0
