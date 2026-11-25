@@ -1,5 +1,5 @@
 # syntax=docker/dockerfile:1.7
-ARG GO_IMAGE=cgr.dev/chainguard/go:latest-dev@sha256:ed70318f7b4f2e4a82e1dbc363f7a13be3a5805081f86ed9d1ec02d2694c222f
+ARG GO_IMAGE=cgr.dev/chainguard/go:latest-dev@sha256:9b20546aae743fadb0adb5b4801188b79061de7299f074d82ca6c939c7f80772
 ARG RUNTIME_IMAGE=cgr.dev/chainguard/static:latest@sha256:fc42af33e643f20d08baf03cddcc1c02ba57052dfb02edb0d79f3fc47bcea8d9
 # The official image of the same release supplies the packaged data files only: light modules,
 # modules.d, Kibana dashboards, fields.yml and the configuration files. No binary is taken from it.
@@ -43,7 +43,7 @@ RUN --mount=type=cache,id=metricbeat-go-mod,target=/root/go/pkg/mod,sharing=lock
 
 FROM ${RUNTIME_IMAGE}
 ARG BEATS_VERSION=8.19.19
-ARG IMAGE_VERSION=8.19.19.1-patched
+ARG IMAGE_VERSION=8.19.19.3-patched
 LABEL org.opencontainers.image.title="Metricbeat" \
       org.opencontainers.image.version="${IMAGE_VERSION}" \
       org.opencontainers.image.source="https://github.com/elastic/beats" \

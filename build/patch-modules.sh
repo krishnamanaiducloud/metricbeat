@@ -4,7 +4,8 @@ export CGO_ENABLED=0
 
 # golang.org/x/crypto has no tagged release with the GO-2026-5932 fix yet; this is the upstream fix commit.
 # libcap cap/psx v1.2.78 (libcap 2.78) replace upstream's v1.2.57.
-pins="golang.org/x/net@v0.62.0 golang.org/x/crypto@v0.58.1-0.20261009181718-2f1f834330b2 golang.org/x/text@v0.43.0 google.golang.org/grpc@v1.84.0 github.com/klauspost/compress@v1.20.3 kernel.org/pub/linux/libs/security/libcap/cap@v1.2.78 kernel.org/pub/linux/libs/security/libcap/psx@v1.2.78"
+# OpenTelemetry-Go v1.47.0 fixes CVE-2026-128085 in the trace package.
+pins="golang.org/x/net@v0.62.0 golang.org/x/crypto@v0.58.1-0.20261009181718-2f1f834330b2 golang.org/x/text@v0.43.0 google.golang.org/grpc@v1.84.0 github.com/klauspost/compress@v1.20.3 go.opentelemetry.io/otel@v1.47.0 go.opentelemetry.io/otel/trace@v1.47.0 kernel.org/pub/linux/libs/security/libcap/cap@v1.2.78 kernel.org/pub/linux/libs/security/libcap/psx@v1.2.78"
 
 # shellcheck disable=SC2086
 go get $pins

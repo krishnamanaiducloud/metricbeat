@@ -2,9 +2,9 @@
 
 Metricbeat 8.19.19 rebuilt from the verified `elastic/beats` release commit with a current
 Chainguard Go toolchain and a shell-less static runtime. Published as
-`mohankrishna999/metricbeat:8.19.19.1-patched` for amd64 and arm64.
+`mohankrishna999/metricbeat:8.19.19.3-patched` for amd64 and arm64.
 
-## 8.19.19.1-patched
+## 8.19.19.3-patched
 
 - **Same distribution as the official image.** The binary is now built from
   `x-pack/metricbeat`, the default distribution in `docker.elastic.co/beats/metricbeat`.
@@ -22,6 +22,9 @@ Chainguard Go toolchain and a shell-less static runtime. Published as
   raised from v1.2.57 to v1.2.78, alongside the existing pins: golang.org/x/net 0.62.0, `golang.org/x/crypto` with the GO-2026-5932 fix (`v0.58.1-0.20261009181718-2f1f834330b2`), golang.org/x/text 0.43.0, google.golang.org/grpc 1.84.0 and github.com/klauspost/compress 1.20.3. See
   `build/patch-modules.sh`; the build fails if a pin does not apply or if
   `golang.org/x/crypto/openpgp` is linked in.
+- **OpenTelemetry and Go runtime.** OpenTelemetry-Go is raised to v1.47.0 and the
+  Chainguard Go toolchain is raised to Go 1.27.4, fixing the reported OTel trace and
+  Go standard-library vulnerabilities.
 - **Version output.** `metricbeat version` reports the release commit and its time, as
   the official build does (the previous tag printed `unknown`).
 - **Same environment.** The image sets `PATH` and
